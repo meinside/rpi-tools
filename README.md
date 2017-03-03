@@ -5,7 +5,7 @@ Various tools for Raspberry Pi, written in Golang.
 ## How to get
 
 ```bash
-$ go get -u github.com/meinside/rpi-tools
+$ go get -u github.com/meinside/rpi-tools/...
 ```
 
 ## Usage (example)
