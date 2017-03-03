@@ -83,6 +83,9 @@ func printStatuses2() {
 		float32(sys)/1024/1024,
 		float32(heap)/1024/1024,
 	)
+
+	ips := status.IpAddresses()
+	fmt.Printf("> assigned ips\n%s\n\n", strings.Join(ips, ", "))
 }
 ```
 
@@ -167,6 +170,10 @@ Serial          : 0000000000000000
 
 > memory usage
 system: 18.3MB, heap: 0.1MB
+
+> assigned ips
+192.168.0.7
+
 ```
 
 ### Service (systemd)
