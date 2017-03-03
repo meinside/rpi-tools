@@ -4,13 +4,13 @@ package tools
 
 import (
 	"fmt"
-	"strings"
-
 	"os/exec"
+	"runtime"
+	"strings"
 )
 
 // Run given command with parameters and return combined output
-func run(cmdAndParams []string) (string, error) {
+func runCmd(cmdAndParams []string) (string, error) {
 	if len(cmdAndParams) < 1 {
 		return "", fmt.Errorf("No command provided")
 	}
@@ -22,25 +22,25 @@ func run(cmdAndParams []string) (string, error) {
 // Get hostname
 // (`hostname`)
 func Hostname() (result string, err error) {
-	return run([]string{"hostname"})
+	return runCmd([]string{"hostname"})
 }
 
 // Get uname with '-a' parameter
 // (`uname -a`)
 func Uname() (result string, err error) {
-	return run([]string{"uname", "-a"})
+	return runCmd([]string{"uname", "-a"})
 }
 
 // Get system uptime
 // (`uptime`)
 func Uptime() (result string, err error) {
-	return run([]string{"uptime"})
+	return runCmd([]string{"uptime"})
 }
 
 // Get disk usages
 // (`df -h`)
 func FreeSpaces() (result string, err error) {
-	return run([]string{"df", "-h"})
+	return runCmd([]string{"df", "-h"})
 }
 
 // Get memory split: arm and gpu
@@ -48,11 +48,11 @@ func FreeSpaces() (result string, err error) {
 func MemorySplit() (result []string, err error) {
 	var output string
 	// arm memory
-	output, err = run([]string{"vcgencmd", "get_mem", "arm"})
+	output, err = runCmd([]string{"vcgencmd", "get_mem", "arm"})
 	result = append(result, output)
 	if err == nil {
 		// gpu memory
-		output, err = run([]string{"vcgencmd", "get_mem", "gpu"})
+		output, err = runCmd([]string{"vcgencmd", "get_mem", "gpu"})
 		result = append(result, output)
 	}
 	return
@@ -61,17 +61,24 @@ func MemorySplit() (result []string, err error) {
 // Get free memory
 // (`free -o -h`)
 func FreeMemory() (result string, err error) {
-	return run([]string{"free", "-o", "-h"})
+	return runCmd([]string{"free", "-o", "-h"})
 }
 
 // Get CPU temperature
 // (`vcgencmd measure_temp`)
 func CpuTemperature() (result string, err error) {
-	return run([]string{"vcgencmd", "measure_temp"})
+	return runCmd([]string{"vcgencmd", "measure_temp"})
 }
 
 // Get CPU information
 // (`cat /proc/cpuinfo`)
 func CpuInfo() (result string, err error) {
-	return run([]string{"cat", "/proc/cpuinfo"})
+	return runCmd([]string{"cat", "/proc/cpuinfo"})
+}
+
+// Get system & heap allocated memory usage
+func MemoryUsage() (sys, heap uint64) {
+	m := new(runtime.MemStats)
+	runtime.ReadMemStats(m)
+	return m.Sys, m.HeapAlloc
 }
