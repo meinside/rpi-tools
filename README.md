@@ -169,6 +169,48 @@ Serial          : 0000000000000000
 system: 18.3MB, heap: 0.1MB
 ```
 
+### Service (systemd)
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/meinside/rpi-tools/service"
+)
+
+func main() {
+	testSystemd()
+}
+
+func testSystemd() {
+	var msg string
+	var success bool
+
+	var statuses map[string]string
+	statuses, success = service.SystemctlStatus([]string{"some-service1", "some-service2"})
+	fmt.Printf("> service statuses:\n")
+	for service, status := range statuses {
+		fmt.Printf("  %s: %s\n", service, status)
+	}
+
+	msg, success = service.SystemctlStart("some-service3")
+	if success {
+		fmt.Printf("> %s\n", msg)
+	} else {
+		fmt.Printf("* %s\n", msg)
+	}
+
+	msg, success = service.SystemctlStop("some-service3")
+	if success {
+		fmt.Printf("> %s\n", msg)
+	} else {
+		fmt.Printf("* %s\n", msg)
+	}
+}
+```
+
 ## Todos
 
 - [ ] Add some more useful functions
