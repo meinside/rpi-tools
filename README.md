@@ -10,6 +10,8 @@ $ go get -u github.com/meinside/rpi-tools
 
 ## Usage (example)
 
+### Status
+
 ```go
 package main
 
@@ -17,62 +19,70 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/meinside/rpi-tools"
+	"github.com/meinside/rpi-tools/status"
 )
 
 func main() {
-	printStatuses()
+	printStatuses1()
+	printStatuses2()
 }
 
-// status.go
-func printStatuses() {
-	if result, err := tools.Hostname(); err == nil {
+func printStatuses1() {
+	if result, err := status.Hostname(); err == nil {
 		fmt.Printf("> hostname\n%s\n\n", result)
 	} else {
 		fmt.Printf("* error: %s\n", err)
 	}
 
-	if result, err := tools.Uname(); err == nil {
+	if result, err := status.Uname(); err == nil {
 		fmt.Printf("> uname\n%s\n\n", result)
 	} else {
 		fmt.Printf("* error: %s\n", err)
 	}
 
-	if result, err := tools.Uptime(); err == nil {
+	if result, err := status.Uptime(); err == nil {
 		fmt.Printf("> uptime\n%s\n\n", result)
 	} else {
 		fmt.Printf("* error: %s\n", err)
 	}
 
-	if result, err := tools.FreeSpaces(); err == nil {
+	if result, err := status.FreeSpaces(); err == nil {
 		fmt.Printf("> free spaces\n%s\n\n", result)
 	} else {
 		fmt.Printf("* error: %s\n", err)
 	}
 
-	if result, err := tools.MemorySplit(); err == nil {
+	if result, err := status.MemorySplit(); err == nil {
 		fmt.Printf("> memory split\n%s\n\n", strings.Join(result, ", "))
 	} else {
 		fmt.Printf("* error: %s\n", err)
 	}
 
-	if result, err := tools.FreeMemory(); err == nil {
+	if result, err := status.FreeMemory(); err == nil {
 		fmt.Printf("> free memory\n%s\n\n", result)
 	} else {
 		fmt.Printf("* error: %s\n", err)
 	}
 
-	if result, err := tools.CpuTemperature(); err == nil {
+	if result, err := status.CpuTemperature(); err == nil {
 		fmt.Printf("> cpu temp\n%s\n\n", result)
 	} else {
 		fmt.Printf("* error: %s\n", err)
 	}
 
-	if result, err := tools.CpuInfo(); err == nil {
+	if result, err := status.CpuInfo(); err == nil {
 		fmt.Printf("> cpu info\n%s\n\n", result)
 	} else {
 		fmt.Printf("* error: %s\n", err)
 	}
+}
+
+func printStatuses2() {
+	sys, heap := status.MemoryUsage()
+	fmt.Printf("> memory usage\nsystem: %.1fMB, heap: %.1fMB\n\n",
+		float32(sys)/1024/1024,
+		float32(heap)/1024/1024,
+	)
 }
 ```
 
@@ -154,6 +164,9 @@ CPU revision    : 4
 Hardware        : BCM2709
 Revision        : a02082
 Serial          : 0000000000000000
+
+> memory usage
+system: 18.3MB, heap: 0.1MB
 ```
 
 ## Todos
