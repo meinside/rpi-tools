@@ -61,7 +61,7 @@ func MemorySplit() (result []string, err error) {
 // Get free memory
 // (`free -o -h`)
 func FreeMemory() (result string, err error) {
-	return runCmd([]string{"free", "-o", "-h"})
+	return runCmd([]string{"free", "-h"})
 }
 
 // Get CPU temperature
