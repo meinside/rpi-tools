@@ -69,6 +69,13 @@ func FreeMemory() (result string, err error) {
 	return runCmd([]string{"free", "-h"})
 }
 
+// Get system & heap allocated memory usage
+func MemoryUsage() (sys, heap uint64) {
+	m := new(runtime.MemStats)
+	runtime.ReadMemStats(m)
+	return m.Sys, m.HeapAlloc
+}
+
 // Get CPU temperature
 // (`vcgencmd measure_temp`)
 func CpuTemperature() (result string, err error) {
@@ -82,8 +89,9 @@ func CpuInfo() (result string, err error) {
 }
 
 // Free Geo IP information provided by http://geoip.nekudo.com/
+type CityValue interface{} // XXX - can be a string or a bool value
 type GeoInfo struct {
-	//City     string              `json:"city"`	// XXX - when not available, it is returned as bool 'false'
+	City     CityValue     `json:"city"`
 	Country  GeoIpCountry  `json:"country"`
 	Location GeoIpLocation `json:"location"`
 	Ip       string        `json:"ip"`
@@ -93,16 +101,10 @@ type GeoIpCountry struct {
 	Code string `json:"code"`
 }
 type GeoIpLocation struct {
-	Latitude  float32 `json:"latitude"`
-	Longitude float32 `json:"longitude"`
-	Timezone  string  `json:"time_zone"`
-}
-
-// Get system & heap allocated memory usage
-func MemoryUsage() (sys, heap uint64) {
-	m := new(runtime.MemStats)
-	runtime.ReadMemStats(m)
-	return m.Sys, m.HeapAlloc
+	AccuracyRadius int     `json:"accuracy_radius"`
+	Latitude       float32 `json:"latitude"`
+	Longitude      float32 `json:"longitude"`
+	Timezone       string  `json:"time_zone"`
 }
 
 // Get IP addresses
@@ -170,7 +172,7 @@ func GeoLocation(ip string) (GeoInfo, error) {
 	var req *http.Request
 	var resp *http.Response
 	var err error
-	if req, err = http.NewRequest("GET", "http://geoip.nekudo.com/api/"+ip, nil); err == nil {
+	if req, err = http.NewRequest("GET", "https://geoip.nekudo.com/api/"+ip, nil); err == nil {
 		if resp, err = client.Do(req); err == nil {
 			defer resp.Body.Close()
 
