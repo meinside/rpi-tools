@@ -154,7 +154,7 @@ func ExternalIpAddress() (string, error) {
 
 		var body []byte
 		if body, err = ioutil.ReadAll(resp.Body); err == nil {
-			return string(body), nil
+			return strings.TrimSpace(string(body)), nil
 		} else {
 			log.Printf("Failed to read external ip: %s\n", err)
 		}
