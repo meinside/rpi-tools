@@ -15,10 +15,6 @@ import (
 	"time"
 )
 
-const (
-	httpTimeoutSeconds = 10
-)
-
 // Run given command with parameters and return combined output
 func runCmd(cmdAndParams []string) (string, error) {
 	if len(cmdAndParams) < 1 {
@@ -173,7 +169,15 @@ func ExternalIpAddress() (string, error) {
 // Get GeoInfo result with given IP address
 func GeoLocation(ip string) (GeoInfo, error) {
 	client := &http.Client{
-		Timeout: httpTimeoutSeconds * time.Second,
+		Transport: &http.Transport{
+			Dial: (&net.Dialer{
+				Timeout:   10 * time.Second,
+				KeepAlive: 10 * time.Second,
+			}).Dial,
+			TLSHandshakeTimeout:   5 * time.Second,
+			ResponseHeaderTimeout: 5 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
 	}
 
 	var req *http.Request
