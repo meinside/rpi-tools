@@ -12,6 +12,11 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+	"time"
+)
+
+const (
+	httpTimeoutSeconds = 10
 )
 
 // Run given command with parameters and return combined output
@@ -167,7 +172,9 @@ func ExternalIpAddress() (string, error) {
 
 // Get GeoInfo result with given IP address
 func GeoLocation(ip string) (GeoInfo, error) {
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: httpTimeoutSeconds * time.Second,
+	}
 
 	var req *http.Request
 	var resp *http.Response
