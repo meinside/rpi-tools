@@ -158,9 +158,14 @@ func IpAddresses() []string {
 func ExternalIpAddress() (string, error) {
 	var resp *http.Response
 	var err error
-	if resp, err = http.Get("http://icanhazip.com"); err == nil && resp.StatusCode == 200 {
-		defer resp.Body.Close()
 
+	resp, err = http.Get("http://icanhazip.com")
+
+	if resp != nil {
+		defer resp.Body.Close() // in case of http redirects
+	}
+
+	if err == nil && resp.StatusCode == 200 {
 		var body []byte
 		if body, err = ioutil.ReadAll(resp.Body); err == nil {
 			return strings.TrimSpace(string(body)), nil
