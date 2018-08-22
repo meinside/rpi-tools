@@ -25,31 +25,31 @@ func runCmd(cmdAndParams []string) (string, error) {
 	return strings.TrimRight(string(output), "\n"), err
 }
 
-// Get hostname
+// Hostname fetches hostname
 // (`hostname`)
 func Hostname() (result string, err error) {
 	return runCmd([]string{"hostname"})
 }
 
-// Get uname with '-a' parameter
+// Uname fetches uname with '-a' parameter
 // (`uname -a`)
 func Uname() (result string, err error) {
 	return runCmd([]string{"uname", "-a"})
 }
 
-// Get system uptime
+// Uptime fetches system uptime
 // (`uptime`)
 func Uptime() (result string, err error) {
 	return runCmd([]string{"uptime"})
 }
 
-// Get disk usages
+// FreeSpaces fetches disk usages
 // (`df -h`)
 func FreeSpaces() (result string, err error) {
 	return runCmd([]string{"df", "-h"})
 }
 
-// Get memory split: arm and gpu
+// MemorySplit fetches memory split: arm and gpu
 // (`vcgencmd get_mem arm; vcgencmd get_mem gpu`)
 func MemorySplit() (result []string, err error) {
 	var output string
@@ -64,43 +64,51 @@ func MemorySplit() (result []string, err error) {
 	return
 }
 
-// Get free memory
+// FreeMemory fetches free memory
 // (`free -o -h`)
 func FreeMemory() (result string, err error) {
 	return runCmd([]string{"free", "-h"})
 }
 
-// Get system & heap allocated memory usage
+// MemoryUsage fetches system & heap allocated memory usage
 func MemoryUsage() (sys, heap uint64) {
 	m := new(runtime.MemStats)
 	runtime.ReadMemStats(m)
 	return m.Sys, m.HeapAlloc
 }
 
-// Get CPU temperature
+// CpuTemperature fetches CPU temperature
 // (`vcgencmd measure_temp`)
 func CpuTemperature() (result string, err error) {
 	return runCmd([]string{"vcgencmd", "measure_temp"})
 }
 
-// Get CPU information
+// CpuInfo fetches CPU information
 // (`cat /proc/cpuinfo`)
 func CpuInfo() (result string, err error) {
 	return runCmd([]string{"cat", "/proc/cpuinfo"})
 }
 
 // Free Geo IP information provided by http://geoip.nekudo.com/
+
+// CityValue is a struct for city value
 type CityValue interface{} // XXX - can be a string or a bool value
+
+// GeoInfo struct
 type GeoInfo struct {
 	City     CityValue     `json:"city"`
 	Country  GeoIpCountry  `json:"country"`
 	Location GeoIpLocation `json:"location"`
 	Ip       string        `json:"ip"`
 }
+
+// GeoIpCountry struct
 type GeoIpCountry struct {
 	Name string `json:"name"`
 	Code string `json:"code"`
 }
+
+// GeoIpLocation struct
 type GeoIpLocation struct {
 	AccuracyRadius int     `json:"accuracy_radius"`
 	Latitude       float32 `json:"latitude"`
@@ -108,7 +116,7 @@ type GeoIpLocation struct {
 	Timezone       string  `json:"time_zone"`
 }
 
-// Get IP addresses
+// IpAddresses fetches IP addresses
 //
 // http://play.golang.org/p/BDt3qEQ_2H
 func IpAddresses() []string {
@@ -146,7 +154,7 @@ func IpAddresses() []string {
 	return ips
 }
 
-// Get external IP address (https://gist.github.com/jniltinho/9788121)
+// ExternalIpAddress fetches external IP address (https://gist.github.com/jniltinho/9788121)
 func ExternalIpAddress() (string, error) {
 	var resp *http.Response
 	var err error
@@ -156,9 +164,9 @@ func ExternalIpAddress() (string, error) {
 		var body []byte
 		if body, err = ioutil.ReadAll(resp.Body); err == nil {
 			return strings.TrimSpace(string(body)), nil
-		} else {
-			log.Printf("Failed to read external ip: %s\n", err)
 		}
+
+		log.Printf("Failed to read external ip: %s\n", err)
 	} else {
 		log.Printf("Failed to fetch external ip: %s (http %d)\n", err, resp.StatusCode)
 	}
@@ -166,7 +174,7 @@ func ExternalIpAddress() (string, error) {
 	return "0.0.0.0", err
 }
 
-// Get GeoInfo result with given IP address
+// GeoLocation fetches GeoInfo result with given IP address
 func GeoLocation(ip string) (GeoInfo, error) {
 	client := &http.Client{
 		Transport: &http.Transport{
@@ -185,18 +193,22 @@ func GeoLocation(ip string) (GeoInfo, error) {
 	var resp *http.Response
 	var err error
 	if req, err = http.NewRequest("GET", "https://geoip.nekudo.com/api/"+ip, nil); err == nil {
-		if resp, err = client.Do(req); err == nil {
-			defer resp.Body.Close()
+		resp, err = client.Do(req)
 
+		if resp != nil {
+			defer resp.Body.Close() // in case of http redirects
+		}
+
+		if err == nil {
 			var body []byte
 			if body, err = ioutil.ReadAll(resp.Body); err == nil {
 				if resp.StatusCode == 200 {
 					var jsonResp GeoInfo
 					if err = json.Unmarshal(body, &jsonResp); err == nil {
 						return jsonResp, nil
-					} else {
-						log.Printf("Failed to parse geo info json: %s\n", err)
 					}
+
+					log.Printf("Failed to parse geo info json: %s\n", err)
 				} else {
 					log.Printf("Geo info HTTP error %d\n", resp.StatusCode)
 				}
