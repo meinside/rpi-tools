@@ -193,9 +193,13 @@ func GeoLocation(ip string) (GeoInfo, error) {
 	var resp *http.Response
 	var err error
 	if req, err = http.NewRequest("GET", "https://geoip.nekudo.com/api/"+ip, nil); err == nil {
-		if resp, err = client.Do(req); err == nil {
-			defer resp.Body.Close()
+		resp, err = client.Do(req)
 
+		if resp != nil {
+			defer resp.Body.Close() // in case of http redirects
+		}
+
+		if err == nil {
 			var body []byte
 			if body, err = ioutil.ReadAll(resp.Body); err == nil {
 				if resp.StatusCode == 200 {
