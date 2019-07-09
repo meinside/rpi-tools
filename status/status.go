@@ -3,10 +3,8 @@ package status
 // Tools for retrieving various statuses of Raspberry Pi
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"os/exec"
@@ -155,77 +153,47 @@ func IpAddresses() []string {
 }
 
 // ExternalIpAddress fetches external IP address (https://gist.github.com/jniltinho/9788121)
-func ExternalIpAddress() (string, error) {
-	var resp *http.Response
-	var err error
-
-	resp, err = http.Get("http://icanhazip.com")
-
-	if resp != nil {
-		defer resp.Body.Close() // in case of http redirects
-	}
-
-	if err == nil && resp.StatusCode == 200 {
-		var body []byte
-		if body, err = ioutil.ReadAll(resp.Body); err == nil {
-			return strings.TrimSpace(string(body)), nil
-		}
-
-		log.Printf("Failed to read external ip: %s\n", err)
-	} else {
-		log.Printf("Failed to fetch external ip: %s (http %d)\n", err, resp.StatusCode)
-	}
-
-	return "0.0.0.0", err
-}
-
-// GeoLocation fetches GeoInfo result with given IP address
-func GeoLocation(ip string) (GeoInfo, error) {
+func ExternalIpAddress() (ip string, err error) {
 	client := &http.Client{
 		Transport: &http.Transport{
 			Dial: (&net.Dialer{
-				Timeout:   10 * time.Second,
-				KeepAlive: 300 * time.Second,
+				Timeout:   5 * time.Second,
+				KeepAlive: 30 * time.Second,
 			}).Dial,
-			IdleConnTimeout:       90 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ResponseHeaderTimeout: 10 * time.Second,
+			IdleConnTimeout:       30 * time.Second,
+			TLSHandshakeTimeout:   5 * time.Second,
+			ResponseHeaderTimeout: 5 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
 		},
 	}
 
+	// http get request
 	var req *http.Request
-	var resp *http.Response
-	var err error
-	if req, err = http.NewRequest("GET", "https://geoip.nekudo.com/api/"+ip, nil); err == nil {
+	if req, err = http.NewRequest("GET", "https://domains.google.com/checkip", nil); err == nil {
+		// user-agent
+		req.Header.Set("User-Agent", fmt.Sprintf("rpi-tools (golang; %s; %s)", runtime.GOOS, runtime.GOARCH))
+
+		// http get
+		var resp *http.Response
 		resp, err = client.Do(req)
 
 		if resp != nil {
 			defer resp.Body.Close() // in case of http redirects
 		}
 
-		if err == nil {
+		if err == nil && resp.StatusCode == 200 {
 			var body []byte
 			if body, err = ioutil.ReadAll(resp.Body); err == nil {
-				if resp.StatusCode == 200 {
-					var jsonResp GeoInfo
-					if err = json.Unmarshal(body, &jsonResp); err == nil {
-						return jsonResp, nil
-					}
+				ip := strings.TrimSpace(string(body))
 
-					log.Printf("Failed to parse geo info json: %s\n", err)
-				} else {
-					log.Printf("Geo info HTTP error %d\n", resp.StatusCode)
-				}
-			} else {
-				log.Printf("Failed to read geo info response: %s\n", err)
+				return ip, nil
 			}
+
+			err = fmt.Errorf("failed to read external ip: %s", err)
 		} else {
-			log.Printf("Failed to request geo info: %s\n", err)
+			err = fmt.Errorf("failed to fetch external ip: %s (http %d)", err, resp.StatusCode)
 		}
-	} else {
-		log.Printf("Failed to create a geo info request: %s\n", err)
 	}
 
-	return GeoInfo{}, err
+	return "0.0.0.0", err
 }
