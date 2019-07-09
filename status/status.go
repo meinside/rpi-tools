@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -78,40 +79,34 @@ func MemoryUsage() (sys, heap uint64) {
 // CpuTemperature fetches CPU temperature
 // (`vcgencmd measure_temp`)
 func CpuTemperature() (result string, err error) {
-	return runCmd([]string{"vcgencmd", "measure_temp"})
+	result, err = runCmd([]string{"vcgencmd", "measure_temp"})
+	if err == nil {
+		comps := strings.Split(result, "=") // eg: "temp=68.0'C"
+		if len(comps) == 2 {
+			return comps[1], nil
+		}
+	}
+	return result, err
+}
+
+// CpuFrequency fetches frequency of arm clock
+// (`vcgencmd measure_clock arm`)
+func CpuFrequency() (result string, err error) {
+	result, err = runCmd([]string{"vcgencmd", "measure_clock", "arm"})
+	if err == nil {
+		comps := strings.Split(result, "=") // eg: "frequency(48)=600169920"
+		if len(comps) == 2 {
+			num, _ := strconv.ParseFloat(strings.TrimSpace(comps[1]), 64)
+			return fmt.Sprintf("%.1f MHz", num/1000.0/1000.0), nil
+		}
+	}
+	return result, err
 }
 
 // CpuInfo fetches CPU information
 // (`cat /proc/cpuinfo`)
 func CpuInfo() (result string, err error) {
 	return runCmd([]string{"cat", "/proc/cpuinfo"})
-}
-
-// Free Geo IP information provided by http://geoip.nekudo.com/
-
-// CityValue is a struct for city value
-type CityValue interface{} // XXX - can be a string or a bool value
-
-// GeoInfo struct
-type GeoInfo struct {
-	City     CityValue     `json:"city"`
-	Country  GeoIpCountry  `json:"country"`
-	Location GeoIpLocation `json:"location"`
-	Ip       string        `json:"ip"`
-}
-
-// GeoIpCountry struct
-type GeoIpCountry struct {
-	Name string `json:"name"`
-	Code string `json:"code"`
-}
-
-// GeoIpLocation struct
-type GeoIpLocation struct {
-	AccuracyRadius int     `json:"accuracy_radius"`
-	Latitude       float32 `json:"latitude"`
-	Longitude      float32 `json:"longitude"`
-	Timezone       string  `json:"time_zone"`
 }
 
 // IpAddresses fetches IP addresses
