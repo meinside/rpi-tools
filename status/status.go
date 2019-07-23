@@ -7,45 +7,36 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
-	"os/exec"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/meinside/rpi-tools/command"
 )
-
-// Run given command with parameters and return combined output
-func runCmd(cmdAndParams []string) (string, error) {
-	if len(cmdAndParams) < 1 {
-		return "", fmt.Errorf("No command provided")
-	}
-
-	output, err := exec.Command(cmdAndParams[0], cmdAndParams[1:]...).CombinedOutput()
-	return strings.TrimRight(string(output), "\n"), err
-}
 
 // Hostname fetches hostname
 // (`hostname`)
 func Hostname() (result string, err error) {
-	return runCmd([]string{"hostname"})
+	return command.Run("hostname")
 }
 
 // Uname fetches uname with '-a' parameter
 // (`uname -a`)
 func Uname() (result string, err error) {
-	return runCmd([]string{"uname", "-a"})
+	return command.Run("uname", "-a")
 }
 
 // Uptime fetches system uptime
 // (`uptime`)
 func Uptime() (result string, err error) {
-	return runCmd([]string{"uptime"})
+	return command.Run("uptime")
 }
 
 // FreeSpaces fetches disk usages
 // (`df -h`)
 func FreeSpaces() (result string, err error) {
-	return runCmd([]string{"df", "-h"})
+	return command.Run("df", "-h")
 }
 
 // MemorySplit fetches memory split: arm and gpu
@@ -53,11 +44,11 @@ func FreeSpaces() (result string, err error) {
 func MemorySplit() (result []string, err error) {
 	var output string
 	// arm memory
-	output, err = runCmd([]string{"vcgencmd", "get_mem", "arm"})
+	output, err = command.Run("vcgencmd", "get_mem", "arm")
 	result = append(result, output)
 	if err == nil {
 		// gpu memory
-		output, err = runCmd([]string{"vcgencmd", "get_mem", "gpu"})
+		output, err = command.Run("vcgencmd", "get_mem", "gpu")
 		result = append(result, output)
 	}
 	return
@@ -66,7 +57,7 @@ func MemorySplit() (result []string, err error) {
 // FreeMemory fetches free memory
 // (`free -o -h`)
 func FreeMemory() (result string, err error) {
-	return runCmd([]string{"free", "-h"})
+	return command.Run("free", "-h")
 }
 
 // MemoryUsage fetches system & heap allocated memory usage
@@ -79,7 +70,7 @@ func MemoryUsage() (sys, heap uint64) {
 // CpuTemperature fetches CPU temperature
 // (`vcgencmd measure_temp`)
 func CpuTemperature() (result string, err error) {
-	result, err = runCmd([]string{"vcgencmd", "measure_temp"})
+	result, err = command.Run("vcgencmd", "measure_temp")
 	if err == nil {
 		comps := strings.Split(result, "=") // eg: "temp=68.0'C"
 		if len(comps) == 2 {
@@ -92,7 +83,7 @@ func CpuTemperature() (result string, err error) {
 // CpuFrequency fetches frequency of arm clock
 // (`vcgencmd measure_clock arm`)
 func CpuFrequency() (result string, err error) {
-	result, err = runCmd([]string{"vcgencmd", "measure_clock", "arm"})
+	result, err = command.Run("vcgencmd", "measure_clock", "arm")
 	if err == nil {
 		comps := strings.Split(result, "=") // eg: "frequency(48)=600169920"
 		if len(comps) == 2 {
@@ -103,10 +94,58 @@ func CpuFrequency() (result string, err error) {
 	return result, err
 }
 
+// CpuThrottled returns whether the system is throttled or not
+func CpuThrottled() (result string, err error) {
+	result, err = command.Run("vcgencmd", "get_throttled")
+	if err == nil {
+		comps := strings.Split(result, "=") // eg: throttled=0x50000
+		if len(comps) == 2 {
+			num, _ := strconv.ParseInt(strings.Replace(strings.TrimSpace(comps[1]), "0x", "", -1), 16, 64)
+
+			results := []string{}
+
+			// https://www.raspberrypi.org/forums/viewtopic.php?f=63&t=147781&start=50#p972790
+			if num&1 > 0 {
+				// under-voltage
+				results = append(results, "under-voltage now")
+			}
+			if num&(1<<1) > 0 {
+				// arm frequency capped
+				results = append(results, "arm freq capped now")
+			}
+			if num&(1<<2) > 0 {
+				// currently throttled
+				results = append(results, "throttled now")
+			}
+			if num&(1<<16) > 0 && num&1 <= 0 {
+				// under-voltage has occurred
+				results = append(results, "under-voltage before")
+			}
+			if num&(1<<17) > 0 && num&(1<<1) <= 0 {
+				// arm frequency capped has occurred
+				results = append(results, "arm freq capped before")
+			}
+			if num&(1<<18) > 0 && num&(1<<2) <= 0 {
+				// throttling has occurred
+				results = append(results, "throttled before")
+			}
+
+			if len(results) <= 0 {
+				result = "ok"
+			} else {
+				result = strings.Join(results, ", ")
+			}
+
+			return result, nil
+		}
+	}
+	return result, err
+}
+
 // CpuInfo fetches CPU information
 // (`cat /proc/cpuinfo`)
 func CpuInfo() (result string, err error) {
-	return runCmd([]string{"cat", "/proc/cpuinfo"})
+	return command.Run("cat", "/proc/cpuinfo")
 }
 
 // IpAddresses fetches IP addresses
