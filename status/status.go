@@ -148,10 +148,10 @@ func CpuInfo() (result string, err error) {
 	return command.Run("cat", "/proc/cpuinfo")
 }
 
-// IpAddresses fetches IP addresses
+// IPAddresses fetches IP addresses
 //
 // http://play.golang.org/p/BDt3qEQ_2H
-func IpAddresses() []string {
+func IPAddresses() []string {
 	ips := []string{}
 	if ifaces, err := net.Interfaces(); err == nil {
 		for _, iface := range ifaces {
@@ -186,8 +186,8 @@ func IpAddresses() []string {
 	return ips
 }
 
-// ExternalIpAddress fetches external IP address (https://gist.github.com/jniltinho/9788121)
-func ExternalIpAddress() (ip string, err error) {
+// ExternalIPAddress fetches external IP address (https://gist.github.com/jniltinho/9788121)
+func ExternalIPAddress() (ip string, err error) {
 	client := &http.Client{
 		Transport: &http.Transport{
 			Dial: (&net.Dialer{
